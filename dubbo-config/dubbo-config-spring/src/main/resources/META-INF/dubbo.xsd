@@ -714,6 +714,11 @@
 						<xsd:documentation><![CDATA[ The service protocol. ]]></xsd:documentation>
 					</xsd:annotation>
 				</xsd:attribute>
+				<xsd:attribute name="token" type="xsd:string" use="optional">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[ 消费者token. ]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
 				<xsd:anyAttribute namespace="##other" processContents="lax" />
 			</xsd:extension>
 		</xsd:complexContent>

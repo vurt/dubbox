@@ -1,32 +1,39 @@
 package com.alibaba.dubbo.remoting.zookeeper.zkclient;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.alibaba.dubbo.common.Constants;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkNoNodeException;
 import org.I0Itec.zkclient.exception.ZkNodeExistsException;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
 
+import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.remoting.zookeeper.ChildListener;
 import com.alibaba.dubbo.remoting.zookeeper.StateListener;
 import com.alibaba.dubbo.remoting.zookeeper.support.AbstractZookeeperClient;
 
-public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildListener> {
+public class ZkclientZookeeperClient extends
+		AbstractZookeeperClient<IZkChildListener> {
 
 	private final ZkClient client;
 
 	private volatile KeeperState state = KeeperState.SyncConnected;
-
+	
+	private boolean hasAuthority=false;
+	
 	public ZkclientZookeeperClient(URL url) {
 		super(url);
-		client = new ZkClient(
-                url.getBackupAddress(),
-                url.getParameter(Constants.SESSION_TIMEOUT_KEY, Constants.DEFAULT_SESSION_TIMEOUT),
-                url.getParameter(Constants.TIMEOUT_KEY, Constants.DEFAULT_REGISTRY_CONNECT_TIMEOUT));
+		client = new ZkClient(url.getBackupAddress(), url.getParameter(
+				Constants.SESSION_TIMEOUT_KEY,
+				Constants.DEFAULT_SESSION_TIMEOUT), url.getParameter(
+				Constants.TIMEOUT_KEY,
+				Constants.DEFAULT_REGISTRY_CONNECT_TIMEOUT));
 		client.subscribeStateChanges(new IZkStateListener() {
 			public void handleStateChanged(KeeperState state) throws Exception {
 				ZkclientZookeeperClient.this.state = state;
@@ -36,15 +43,35 @@ public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildLis
 					stateChanged(StateListener.CONNECTED);
 				}
 			}
+
 			public void handleNewSession() throws Exception {
 				stateChanged(StateListener.RECONNECTED);
 			}
-		});
-	}
 
+			public void handleSessionEstablishmentError(Throwable paramThrowable)
+					throws Exception {
+				throw new Exception(paramThrowable);
+			}
+		});
+		// tbw zk连接中加入digest权限标识
+		String authority = url.getAuthority();
+		if (authority != null && authority.length() > 0) {
+			client.addAuthInfo("digest", authority.getBytes());
+			hasAuthority=true;
+		}
+	}
+	
 	public void createPersistent(String path) {
 		try {
 			client.createPersistent(path, true);
+			// tbw
+			if (hasAuthority) {
+				List<ACL> acls = new ArrayList<ACL>();
+				acls.addAll(ZooDefs.Ids.CREATOR_ALL_ACL);
+				acls.addAll(ZooDefs.Ids.READ_ACL_UNSAFE);
+				client.setAcl(path, acls);
+			}
+
 		} catch (ZkNodeExistsException e) {
 		}
 	}
@@ -52,6 +79,13 @@ public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildLis
 	public void createEphemeral(String path) {
 		try {
 			client.createEphemeral(path);
+			// tbw
+			if (hasAuthority) {
+				List<ACL> acls = new ArrayList<ACL>();
+				acls.addAll(ZooDefs.Ids.CREATOR_ALL_ACL);
+				acls.addAll(ZooDefs.Ids.READ_ACL_UNSAFE);
+				client.setAcl(path, acls);
+			}
 		} catch (ZkNodeExistsException e) {
 		}
 	}
@@ -66,9 +100,9 @@ public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildLis
 	public List<String> getChildren(String path) {
 		try {
 			return client.getChildren(path);
-        } catch (ZkNoNodeException e) {
-            return null;
-        }
+		} catch (ZkNoNodeException e) {
+			return null;
+		}
 	}
 
 	public boolean isConnected() {
@@ -79,21 +113,23 @@ public class ZkclientZookeeperClient extends AbstractZookeeperClient<IZkChildLis
 		client.close();
 	}
 
-	public IZkChildListener createTargetChildListener(String path, final ChildListener listener) {
+	public IZkChildListener createTargetChildListener(String path,
+			final ChildListener listener) {
 		return new IZkChildListener() {
-			public void handleChildChange(String parentPath, List<String> currentChilds)
-					throws Exception {
+			public void handleChildChange(String parentPath,
+					List<String> currentChilds) throws Exception {
 				listener.childChanged(parentPath, currentChilds);
 			}
 		};
 	}
 
-	public List<String> addTargetChildListener(String path, final IZkChildListener listener) {
+	public List<String> addTargetChildListener(String path,
+			final IZkChildListener listener) {
 		return client.subscribeChildChanges(path, listener);
 	}
 
 	public void removeTargetChildListener(String path, IZkChildListener listener) {
-		client.unsubscribeChildChanges(path,  listener);
+		client.unsubscribeChildChanges(path, listener);
 	}
 
 }
