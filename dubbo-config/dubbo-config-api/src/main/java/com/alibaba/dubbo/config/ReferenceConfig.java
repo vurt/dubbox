@@ -84,6 +84,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     private ConsumerConfig       consumer;
     
     private String				 protocol;
+    
+    //tbw 加入客户端token
+    private String token;
 
     // 接口代理类引用
     private transient volatile T ref;
@@ -276,6 +279,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             }
         }
         map.put(Constants.INTERFACE_KEY, interfaceName);
+        appendParameters(map, this.token);//tbw 加入客户端token
         appendParameters(map, application);
         appendParameters(map, module);
         appendParameters(map, consumer, Constants.DEFAULT_KEY);
@@ -528,5 +532,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     Invoker<?> getInvoker() {
         return invoker;
     }
+
+	public String getToken() {
+		return token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
+	}
     
 }
