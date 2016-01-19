@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -299,11 +300,24 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         boolean anyhost = false;
         if (NetUtils.isInvalidLocalHost(host)) {
             anyhost = true;
-            try {
-                host = InetAddress.getLocalHost().getHostAddress();
-            } catch (UnknownHostException e) {
-                logger.warn(e.getMessage(), e);
+            
+            try {//tbw 第一步先从JDK的NetworkInterfaces里面取，确保得到正确的内网ip
+            	InetAddress addr = NetUtils.getAddrFromNetworkInterface(true);
+				if (addr!=null) {
+					host = addr.getHostAddress();
+				}
+			} catch (SocketException e1) {
+				logger.warn(e1.getMessage(), e1);
+			}
+            
+            if (NetUtils.isInvalidLocalHost(host)) {
+	            try {
+	                host = InetAddress.getLocalHost().getHostAddress();
+	            } catch (UnknownHostException e) {
+	                logger.warn(e.getMessage(), e);
+	            }
             }
+            
             if (NetUtils.isInvalidLocalHost(host)) {
                 if (registryURLs != null && registryURLs.size() > 0) {
                     for (URL registryURL : registryURLs) {

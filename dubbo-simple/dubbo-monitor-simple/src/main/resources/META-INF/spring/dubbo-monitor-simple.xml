@@ -29,11 +29,11 @@
 		<property name="chartsDirectory" value="${dubbo.charts.directory}" />
 	</bean>
 	
-	<dubbo:application name="${dubbo.application.name}" owner="${dubbo.application.owner}" />
+	<dubbo:application name="simple-monitor" owner="c2" />
 	
-	<dubbo:registry address="${dubbo.registry.address}" />
+	<dubbo:registry address="zookeeper://172.16.71.39:2181" />
 	
-	<dubbo:protocol name="dubbo" port="${dubbo.protocol.port}" host="${dubbo.protocol.host}"/>
+	<dubbo:protocol name="dubbo" port="7070" host="172.16.25.194"/>
 	
 	<dubbo:service interface="com.alibaba.dubbo.monitor.MonitorService" ref="monitorService" delay="-1" />
 	

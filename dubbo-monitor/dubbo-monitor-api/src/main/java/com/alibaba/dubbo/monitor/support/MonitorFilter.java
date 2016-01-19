@@ -83,10 +83,13 @@ public class MonitorFilter implements Filter {
             long elapsed = System.currentTimeMillis() - start; // 计算调用耗时
             int concurrent = getConcurrent(invoker, invocation).get(); // 当前并发数
             String application = invoker.getUrl().getParameter(Constants.APPLICATION_KEY);
+            String group = invoker.getUrl().getParameter(Constants.GROUP_KEY);
+            String version = invoker.getUrl().getParameter(Constants.VERSION_KEY);
             String service = invoker.getInterface().getName(); // 获取服务名称
             String method = RpcUtils.getMethodName(invocation); // 获取方法名
             URL url = invoker.getUrl().getUrlParameter(Constants.MONITOR_KEY);
             Monitor monitor = monitorFactory.getMonitor(url);
+            System.out.println(monitor.getClass());
             int localPort;
             String remoteKey;
             String remoteValue;
@@ -109,7 +112,7 @@ public class MonitorFilter implements Filter {
             if (result != null && result.getAttachment(Constants.OUTPUT_KEY) != null) {
                 output = result.getAttachment(Constants.OUTPUT_KEY);
             }
-            monitor.collect(new URL(Constants.COUNT_PROTOCOL,
+            URL statistics = new URL(Constants.COUNT_PROTOCOL,
                                 NetUtils.getLocalHost(), localPort,
                                 service + "/" + method,
                                 MonitorService.APPLICATION, application,
@@ -120,7 +123,12 @@ public class MonitorFilter implements Filter {
                                 MonitorService.ELAPSED, String.valueOf(elapsed),
                                 MonitorService.CONCURRENT, String.valueOf(concurrent),
                                 Constants.INPUT_KEY, input,
-                                Constants.OUTPUT_KEY, output));
+                                Constants.OUTPUT_KEY, output,
+                                MonitorService.GROUP, group,
+                                MonitorService.VERSION, version
+            		);
+            
+			monitor.collect(statistics);
         } catch (Throwable t) {
             logger.error("Failed to monitor count service " + invoker.getUrl() + ", cause: " + t.getMessage(), t);
         }

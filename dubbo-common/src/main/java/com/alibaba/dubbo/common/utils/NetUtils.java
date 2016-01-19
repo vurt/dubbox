@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.Map;
@@ -208,35 +209,47 @@ public class NetUtils {
             logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
         }
         try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            if (interfaces != null) {
-                while (interfaces.hasMoreElements()) {
-                    try {
-                        NetworkInterface network = interfaces.nextElement();
-                        Enumeration<InetAddress> addresses = network.getInetAddresses();
-                        if (addresses != null) {
-                            while (addresses.hasMoreElements()) {
-                                try {
-                                    InetAddress address = addresses.nextElement();
-                                    if (isValidAddress(address)) {
-                                        return address;
-                                    }
-                                } catch (Throwable e) {
-                                    logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
-                                }
-                            }
-                        }
-                    } catch (Throwable e) {
-                        logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
-                    }
-                }
-            }
+           return getAddrFromNetworkInterface(null);
         } catch (Throwable e) {
             logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
         }
         logger.error("Could not get local host ip address, will use 127.0.0.1 instead.");
         return localAddress;
     }
+
+	public static InetAddress getAddrFromNetworkInterface(Boolean isSiteLocal) throws SocketException {
+		Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+		if (interfaces != null) {
+		    while (interfaces.hasMoreElements()) {
+		        try {
+		            NetworkInterface network = interfaces.nextElement();
+		            Enumeration<InetAddress> addresses = network.getInetAddresses();
+		            if (addresses != null) {
+		                while (addresses.hasMoreElements()) {
+		                    try {
+		                        InetAddress address = addresses.nextElement();
+		                        if (null==isSiteLocal) {
+		                        	 if (isValidAddress(address)) {
+				                         return address;
+				                     }
+								}else {
+									 if (isValidAddress(address)&&(isSiteLocal==address.isSiteLocalAddress())) {
+				                         return address;
+				                     }
+								}
+		                       
+		                    } catch (Throwable e) {
+		                        logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
+		                    }
+		                }
+		            }
+		        } catch (Throwable e) {
+		            logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
+		        }
+		    }
+		}
+		return null;
+	}
     
     private static final Map<String, String> hostNameCache = new LRUCache<String, String>(1000);
 
@@ -301,5 +314,7 @@ public class NetUtils {
 		sb.append(path);
 		return sb.toString();
 	}
-    
+    public static void main(String[] args) throws Exception {
+		System.out.println(getAddrFromNetworkInterface(true).getHostAddress());
+	}
 }

@@ -72,7 +72,7 @@ public class DubboMonitor implements Monitor {
                     logger.error("Unexpected error occur at send statistic, cause: " + t.getMessage(), t);
                 }
             }
-        }, monitorInterval, monitorInterval, TimeUnit.MILLISECONDS);
+        }, 5000, 5000, TimeUnit.MILLISECONDS);
     }
     
     public void send() {
@@ -108,8 +108,11 @@ public class DubboMonitor implements Monitor {
                             MonitorService.MAX_INPUT, String.valueOf(maxInput),
                             MonitorService.MAX_OUTPUT, String.valueOf(maxOutput),
                             MonitorService.MAX_ELAPSED, String.valueOf(maxElapsed),
-                            MonitorService.MAX_CONCURRENT, String.valueOf(maxConcurrent)
+                            MonitorService.MAX_CONCURRENT, String.valueOf(maxConcurrent),
+                            MonitorService.GROUP, statistics.getGroup(),
+                            MonitorService.VERSION, statistics.getVersion()
                             );
+            System.out.println("send url:"+url);
             monitorService.collect(url);
             
             // 减掉已统计数据
@@ -145,7 +148,9 @@ public class DubboMonitor implements Monitor {
         int elapsed = url.getParameter(MonitorService.ELAPSED, 0);
         int concurrent = url.getParameter(MonitorService.CONCURRENT, 0);
         // 初始化原子引用
+       
         Statistics statistics = new Statistics(url);
+        System.out.println(statistics.getGroup());
         AtomicReference<long[]> reference = statisticsMap.get(statistics);
         if (reference == null) {
             statisticsMap.putIfAbsent(statistics, new AtomicReference<long[]>());
