@@ -61,7 +61,7 @@ public class DubboMonitor implements Monitor {
     public DubboMonitor(Invoker<MonitorService> monitorInvoker, MonitorService monitorService) {
         this.monitorInvoker = monitorInvoker;
         this.monitorService = monitorService;
-        this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 60000);
+        this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 6000);
         // 启动统计信息收集定时器
         sendFuture = scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             public void run() {
@@ -72,7 +72,7 @@ public class DubboMonitor implements Monitor {
                     logger.error("Unexpected error occur at send statistic, cause: " + t.getMessage(), t);
                 }
             }
-        }, 5000, 5000, TimeUnit.MILLISECONDS);
+        }, monitorInterval, monitorInterval, TimeUnit.MILLISECONDS);
     }
     
     public void send() {
@@ -110,9 +110,10 @@ public class DubboMonitor implements Monitor {
                             MonitorService.MAX_ELAPSED, String.valueOf(maxElapsed),
                             MonitorService.MAX_CONCURRENT, String.valueOf(maxConcurrent),
                             MonitorService.GROUP, statistics.getGroup(),
-                            MonitorService.VERSION, statistics.getVersion()
+                            MonitorService.VERSION, statistics.getVersion(),
+                            MonitorService.SCOPE, statistics.getScope()
                             );
-            System.out.println("send url:"+url);
+            logger.info("发送统计日志："+url);
             monitorService.collect(url);
             
             // 减掉已统计数据
@@ -150,7 +151,6 @@ public class DubboMonitor implements Monitor {
         // 初始化原子引用
        
         Statistics statistics = new Statistics(url);
-        System.out.println(statistics.getGroup());
         AtomicReference<long[]> reference = statisticsMap.get(statistics);
         if (reference == null) {
             statisticsMap.putIfAbsent(statistics, new AtomicReference<long[]>());

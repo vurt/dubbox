@@ -15,6 +15,7 @@
  */
 package com.alibaba.dubbo.monitor.support;
 
+import java.net.InetAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,28 +83,30 @@ public class MonitorFilter implements Filter {
             // ---- 服务信息获取 ----
             long elapsed = System.currentTimeMillis() - start; // 计算调用耗时
             int concurrent = getConcurrent(invoker, invocation).get(); // 当前并发数
-            String application = invoker.getUrl().getParameter(Constants.APPLICATION_KEY);
+            URL invokerUrl = invoker.getUrl();
+			String application = invokerUrl.getParameter(Constants.APPLICATION_KEY);
             String group = invoker.getUrl().getParameter(Constants.GROUP_KEY);
             String version = invoker.getUrl().getParameter(Constants.VERSION_KEY);
+            
             String service = invoker.getInterface().getName(); // 获取服务名称
             String method = RpcUtils.getMethodName(invocation); // 获取方法名
             URL url = invoker.getUrl().getUrlParameter(Constants.MONITOR_KEY);
+            String scope = url.getParameter(Constants.GROUP_KEY);
             Monitor monitor = monitorFactory.getMonitor(url);
-            System.out.println(monitor.getClass());
             int localPort;
             String remoteKey;
             String remoteValue;
             if (Constants.CONSUMER_SIDE.equals(invoker.getUrl().getParameter(Constants.SIDE_KEY))) {
                 // ---- 服务消费方监控 ----
                 context = RpcContext.getContext(); // 消费方必须在invoke()之后获取context信息
-                localPort = 0;
+                localPort = context.getLocalPort();
                 remoteKey = MonitorService.PROVIDER;
                 remoteValue = invoker.getUrl().getAddress();
             } else {
                 // ---- 服务提供方监控 ----
                 localPort = invoker.getUrl().getPort();
                 remoteKey = MonitorService.CONSUMER;
-                remoteValue = context.getRemoteHost();
+                remoteValue = context.getRemoteHost()+":"+localPort;
             }
             String input = "", output = "";
             if (invocation.getAttachment(Constants.INPUT_KEY) != null) {
@@ -112,8 +115,9 @@ public class MonitorFilter implements Filter {
             if (result != null && result.getAttachment(Constants.OUTPUT_KEY) != null) {
                 output = result.getAttachment(Constants.OUTPUT_KEY);
             }
-            URL statistics = new URL(Constants.COUNT_PROTOCOL,
-                                NetUtils.getLocalHost(), localPort,
+            InetAddress addr = NetUtils.getAddrFromNetworkInterface(true);
+			URL statistics = new URL(Constants.COUNT_PROTOCOL,
+                                addr.getHostAddress(), localPort,
                                 service + "/" + method,
                                 MonitorService.APPLICATION, application,
                                 MonitorService.INTERFACE, service,
@@ -125,7 +129,8 @@ public class MonitorFilter implements Filter {
                                 Constants.INPUT_KEY, input,
                                 Constants.OUTPUT_KEY, output,
                                 MonitorService.GROUP, group,
-                                MonitorService.VERSION, version
+                                MonitorService.VERSION, version,
+                                MonitorService.SCOPE, scope
             		);
             
 			monitor.collect(statistics);
