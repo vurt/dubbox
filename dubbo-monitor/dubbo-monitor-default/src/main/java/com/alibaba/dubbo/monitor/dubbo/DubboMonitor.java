@@ -63,7 +63,7 @@ public class DubboMonitor implements Monitor {
         this.monitorService = monitorService;
         this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 6000);
         // 启动统计信息收集定时器
-        sendFuture = scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
+        Thread command = new Thread() {
             public void run() {
                 // 收集统计信息
                 try {
@@ -72,7 +72,10 @@ public class DubboMonitor implements Monitor {
                     logger.error("Unexpected error occur at send statistic, cause: " + t.getMessage(), t);
                 }
             }
-        }, monitorInterval, monitorInterval, TimeUnit.MILLISECONDS);
+        };
+        command.setDaemon(true);//tbw 设置守护线程
+		sendFuture = scheduledExecutorService.scheduleWithFixedDelay(command, monitorInterval, monitorInterval, TimeUnit.MILLISECONDS);
+        
     }
     
     public void send() {

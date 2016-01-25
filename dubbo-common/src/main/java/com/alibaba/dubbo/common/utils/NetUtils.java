@@ -20,7 +20,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.Map;
@@ -122,12 +121,28 @@ public class NetUtils {
         return "0.0.0.0".equals(host);
     }
     
-    public static boolean isInvalidLocalHost(String host) {
-        return host == null 
+    public static boolean isInvalidLocalHost(String host){
+    	return isInvalidLocalHost(host, true);
+    }
+    
+    public static boolean isInvalidLocalHost(String host,Boolean isSiteLocal) {
+        boolean r = host == null 
         			|| host.length() == 0
                     || host.equalsIgnoreCase("localhost")
                     || host.equals("0.0.0.0")
                     || (LOCAL_IP_PATTERN.matcher(host).matches());
+        
+        boolean r2=false;
+        if (isSiteLocal!=null) {
+			try {
+				InetAddress inetAddress = InetAddress.getByName(host);
+				r2=inetAddress.isSiteLocalAddress()!=isSiteLocal.booleanValue();
+			} catch (UnknownHostException e) {
+				r2 = true;
+				e.printStackTrace();
+			}
+		}
+		return r||r2;
     }
     
     public static boolean isValidLocalHost(String host) {
@@ -140,15 +155,17 @@ public class NetUtils {
     }
 
     private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3,5}$");
-
-    private static boolean isValidAddress(InetAddress address) {
+    private static boolean isValidAddress(InetAddress address){
+    	return isValidAddress(address,true);
+    }
+    private static boolean isValidAddress(InetAddress address,Boolean isSiteLocal) {
         if (address == null || address.isLoopbackAddress())
             return false;
         String name = address.getHostAddress();
         return (name != null 
                 && ! ANYHOST.equals(name)
                 && ! LOCALHOST.equals(name) 
-                && IP_PATTERN.matcher(name).matches());
+                && IP_PATTERN.matcher(name).matches()&&(isSiteLocal==null||isSiteLocal.booleanValue()==address.isSiteLocalAddress()));
     }
     
     public static String getLocalHost(){
@@ -209,47 +226,35 @@ public class NetUtils {
             logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
         }
         try {
-           return getAddrFromNetworkInterface(null);
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            if (interfaces != null) {
+                while (interfaces.hasMoreElements()) {
+                    try {
+                        NetworkInterface network = interfaces.nextElement();
+                        Enumeration<InetAddress> addresses = network.getInetAddresses();
+                        if (addresses != null) {
+                            while (addresses.hasMoreElements()) {
+                                try {
+                                    InetAddress address = addresses.nextElement();
+                                    if (isValidAddress(address)) {
+                                        return address;
+                                    }
+                                } catch (Throwable e) {
+                                    logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
+                                }
+                            }
+                        }
+                    } catch (Throwable e) {
+                        logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
+                    }
+                }
+            }
         } catch (Throwable e) {
             logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
         }
         logger.error("Could not get local host ip address, will use 127.0.0.1 instead.");
         return localAddress;
     }
-
-	public static InetAddress getAddrFromNetworkInterface(Boolean isSiteLocal) throws SocketException {
-		Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-		if (interfaces != null) {
-		    while (interfaces.hasMoreElements()) {
-		        try {
-		            NetworkInterface network = interfaces.nextElement();
-		            Enumeration<InetAddress> addresses = network.getInetAddresses();
-		            if (addresses != null) {
-		                while (addresses.hasMoreElements()) {
-		                    try {
-		                        InetAddress address = addresses.nextElement();
-		                        if (null==isSiteLocal) {
-		                        	 if (isValidAddress(address)) {
-				                         return address;
-				                     }
-								}else {
-									 if (isValidAddress(address)&&(isSiteLocal==address.isSiteLocalAddress())) {
-				                         return address;
-				                     }
-								}
-		                       
-		                    } catch (Throwable e) {
-		                        logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
-		                    }
-		                }
-		            }
-		        } catch (Throwable e) {
-		            logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
-		        }
-		    }
-		}
-		return null;
-	}
     
     private static final Map<String, String> hostNameCache = new LRUCache<String, String>(1000);
 
@@ -314,7 +319,8 @@ public class NetUtils {
 		sb.append(path);
 		return sb.toString();
 	}
-    public static void main(String[] args) throws Exception {
-		System.out.println(getAddrFromNetworkInterface(true).getHostAddress());
+    
+    public static void main(String[] args) {
+		System.out.println(getLocalHost());
 	}
 }

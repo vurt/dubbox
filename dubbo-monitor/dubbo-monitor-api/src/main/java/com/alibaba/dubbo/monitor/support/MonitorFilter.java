@@ -115,9 +115,9 @@ public class MonitorFilter implements Filter {
             if (result != null && result.getAttachment(Constants.OUTPUT_KEY) != null) {
                 output = result.getAttachment(Constants.OUTPUT_KEY);
             }
-            InetAddress addr = NetUtils.getAddrFromNetworkInterface(true);
+            
 			URL statistics = new URL(Constants.COUNT_PROTOCOL,
-                                addr.getHostAddress(), localPort,
+					NetUtils.getLocalHost(), localPort,
                                 service + "/" + method,
                                 MonitorService.APPLICATION, application,
                                 MonitorService.INTERFACE, service,

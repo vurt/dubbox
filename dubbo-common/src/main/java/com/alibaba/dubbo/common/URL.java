@@ -945,7 +945,7 @@ public final class URL implements Serializable {
         boolean hasAndEqual = true;
         for(Map.Entry<String, String> entry : parameters.entrySet()) {
             String value = getParameters().get(entry.getKey());
-            if(value == null && entry.getValue() != null || !value.equals(entry.getValue())) {
+            if((value == null && entry.getValue() != null) || (value!=null&&!value.equals(entry.getValue()))) {
                 hasAndEqual = false;
                 break;
             }
