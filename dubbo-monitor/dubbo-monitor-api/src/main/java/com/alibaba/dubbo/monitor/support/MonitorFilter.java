@@ -64,12 +64,13 @@ public class MonitorFilter implements Filter {
             getConcurrent(invoker, invocation).incrementAndGet(); // 并发计数
             try {
                 Result result = invoker.invoke(invocation); // 让调用链往下执行
-                collect(invoker, invocation, result, context, start, false);
+                boolean hasException = result.hasException();//tbw 异常已经被ExceptionFilter序列化，不会被抛出
+                collect(invoker, invocation, result, context, start, hasException);
                 return result;
             } catch (RpcException e) {
                 collect(invoker, invocation, null, context, start, true);
                 throw e;
-            } finally {
+            }finally {
                 getConcurrent(invoker, invocation).decrementAndGet(); // 并发计数
             }
         } else {
@@ -106,7 +107,7 @@ public class MonitorFilter implements Filter {
                 // ---- 服务提供方监控 ----
                 localPort = invoker.getUrl().getPort();
                 remoteKey = MonitorService.CONSUMER;
-                remoteValue = context.getRemoteHost()+":"+localPort;
+                remoteValue = context.getRemoteAddressString();
             }
             String input = "", output = "";
             if (invocation.getAttachment(Constants.INPUT_KEY) != null) {
@@ -132,7 +133,6 @@ public class MonitorFilter implements Filter {
                                 MonitorService.VERSION, version,
                                 MonitorService.SCOPE, scope
             		);
-            
 			monitor.collect(statistics);
         } catch (Throwable t) {
             logger.error("Failed to monitor count service " + invoker.getUrl() + ", cause: " + t.getMessage(), t);

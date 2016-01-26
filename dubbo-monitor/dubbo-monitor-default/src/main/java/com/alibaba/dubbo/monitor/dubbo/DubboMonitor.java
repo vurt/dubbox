@@ -100,7 +100,8 @@ public class DubboMonitor implements Monitor {
             long maxConcurrent = numbers[9];
              
             // 发送汇总信息
-            URL url = statistics.getUrl()
+            URL surl = statistics.getUrl();
+			URL url = surl
                     .addParameters(MonitorService.TIMESTAMP, timestamp,
                             MonitorService.SUCCESS, String.valueOf(success),
                             MonitorService.FAILURE, String.valueOf(failure), 
@@ -111,10 +112,7 @@ public class DubboMonitor implements Monitor {
                             MonitorService.MAX_INPUT, String.valueOf(maxInput),
                             MonitorService.MAX_OUTPUT, String.valueOf(maxOutput),
                             MonitorService.MAX_ELAPSED, String.valueOf(maxElapsed),
-                            MonitorService.MAX_CONCURRENT, String.valueOf(maxConcurrent),
-                            MonitorService.GROUP, statistics.getGroup(),
-                            MonitorService.VERSION, statistics.getVersion(),
-                            MonitorService.SCOPE, statistics.getScope()
+                            MonitorService.MAX_CONCURRENT, String.valueOf(maxConcurrent)
                             );
             logger.info("发送统计日志："+url);
             monitorService.collect(url);
