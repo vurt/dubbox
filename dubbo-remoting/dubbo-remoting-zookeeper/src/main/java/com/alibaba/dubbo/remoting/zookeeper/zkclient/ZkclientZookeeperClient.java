@@ -53,25 +53,11 @@ public class ZkclientZookeeperClient extends
 				throw new Exception(paramThrowable);
 			}
 		});
-		// tbw zk连接中加入digest权限标识
-		String authority = url.getAuthority();
-		if (authority != null && authority.length() > 0) {
-			client.addAuthInfo("digest", authority.getBytes());
-			hasAuthority=true;
-		}
 	}
 	
 	public void createPersistent(String path) {
 		try {
 			client.createPersistent(path, true);
-			// tbw
-			if (hasAuthority) {
-				List<ACL> acls = new ArrayList<ACL>();
-				acls.addAll(ZooDefs.Ids.CREATOR_ALL_ACL);
-				acls.addAll(ZooDefs.Ids.READ_ACL_UNSAFE);
-				client.setAcl(path, acls);
-			}
-
 		} catch (ZkNodeExistsException e) {
 		}
 	}
@@ -79,13 +65,6 @@ public class ZkclientZookeeperClient extends
 	public void createEphemeral(String path) {
 		try {
 			client.createEphemeral(path);
-			// tbw
-			if (hasAuthority) {
-				List<ACL> acls = new ArrayList<ACL>();
-				acls.addAll(ZooDefs.Ids.CREATOR_ALL_ACL);
-				acls.addAll(ZooDefs.Ids.READ_ACL_UNSAFE);
-				client.setAcl(path, acls);
-			}
 		} catch (ZkNodeExistsException e) {
 		}
 	}

@@ -61,9 +61,9 @@ public class DubboMonitor implements Monitor {
     public DubboMonitor(Invoker<MonitorService> monitorInvoker, MonitorService monitorService) {
         this.monitorInvoker = monitorInvoker;
         this.monitorService = monitorService;
-        this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 6000);
+        this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 60000);
         // 启动统计信息收集定时器
-        Thread command = new Thread() {
+        sendFuture = scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             public void run() {
                 // 收集统计信息
                 try {
@@ -72,10 +72,7 @@ public class DubboMonitor implements Monitor {
                     logger.error("Unexpected error occur at send statistic, cause: " + t.getMessage(), t);
                 }
             }
-        };
-        command.setDaemon(true);//tbw 设置守护线程
-		sendFuture = scheduledExecutorService.scheduleWithFixedDelay(command, monitorInterval, monitorInterval, TimeUnit.MILLISECONDS);
-        
+        }, monitorInterval, monitorInterval, TimeUnit.MILLISECONDS);
     }
     
     public void send() {
@@ -100,8 +97,7 @@ public class DubboMonitor implements Monitor {
             long maxConcurrent = numbers[9];
              
             // 发送汇总信息
-            URL surl = statistics.getUrl();
-			URL url = surl
+            URL url = statistics.getUrl()
                     .addParameters(MonitorService.TIMESTAMP, timestamp,
                             MonitorService.SUCCESS, String.valueOf(success),
                             MonitorService.FAILURE, String.valueOf(failure), 
@@ -114,7 +110,6 @@ public class DubboMonitor implements Monitor {
                             MonitorService.MAX_ELAPSED, String.valueOf(maxElapsed),
                             MonitorService.MAX_CONCURRENT, String.valueOf(maxConcurrent)
                             );
-            logger.info("发送统计日志："+url);
             monitorService.collect(url);
             
             // 减掉已统计数据
@@ -150,7 +145,6 @@ public class DubboMonitor implements Monitor {
         int elapsed = url.getParameter(MonitorService.ELAPSED, 0);
         int concurrent = url.getParameter(MonitorService.CONCURRENT, 0);
         // 初始化原子引用
-       
         Statistics statistics = new Statistics(url);
         AtomicReference<long[]> reference = statisticsMap.get(statistics);
         if (reference == null) {

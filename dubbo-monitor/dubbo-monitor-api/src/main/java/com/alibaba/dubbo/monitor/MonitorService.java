@@ -62,8 +62,7 @@ public interface MonitorService {
     String MAX_ELAPSED = "max.elapsed";
 
     String MAX_CONCURRENT = "max.concurrent";
-    //tbw 服务域
-    String SCOPE = "scope";
+
     /**
      * 监控数据采集.
      * 1. 支持调用次数统计：count://host/interface?application=foo&method=foo&provider=10.20.153.11:20880&success=12&failure=2&elapsed=135423423

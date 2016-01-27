@@ -24,8 +24,6 @@ import java.util.regex.Pattern;
  * @author william.liangf
  */
 public class Constants {
-	//tbw 服务域
-	public static final String  SCOPE                           = "scope";
 
     public static final String  PROVIDER                           = "provider";
 
