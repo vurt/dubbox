@@ -412,10 +412,18 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * 合并url参数 顺序为override > -D >Consumer > Provider
      * @param providerUrl
      * @param overrides
-     * @return
+     * @return 
      */
     private URL mergeUrl(URL providerUrl){
-        providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // 合并消费端参数
+    	/* FIXME 合并消费端参数，这样是为了屏蔽provider的非业务的配置，比如线程池，
+    	 * 得到为当前消费者提供服务的provider，为下一步的去重做准备
+    	 * 但是，由于queryMap中含有消费端的application名字，合并后会把providerUrl中的application全部替换成消费端名字
+    	 * 而下一步的configurator.configure方法中，会比较providerUrl中的application和override的application
+    	 * 如果两者不同override的配置则会被跳过，导致所有override都不能生效
+    	 * 暂时的解决方法是发出override指令时把application参数设置成ANY_VALUE
+    	 * by tbw
+    	 */
+    	providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); 
         
         List<Configurator> localConfigurators = this.configurators; // local reference
         if (localConfigurators != null && localConfigurators.size() > 0) {
