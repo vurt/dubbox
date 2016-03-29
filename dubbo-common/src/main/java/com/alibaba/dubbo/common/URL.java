@@ -87,8 +87,18 @@ public final class URL implements Serializable {
 
     private final Map<String, String> parameters;
     
+    private Serializable data;
+    
     // ==== cache ====
     
+    public Serializable getData() {
+        return data;
+    }
+
+    public void setData(Serializable data) {
+        this.data = data;
+    }
+
     private volatile transient Map<String, Number> numbers;
 
     private volatile transient Map<String, URL> urls;
