@@ -34,5 +34,10 @@
 			<artifactId>dubbo-rpc-api</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+		<dependency>
+		  <groupId>org.jboss.resteasy</groupId>
+		  <artifactId>jaxrs-api</artifactId>
+		  <version>3.0.7.Final</version>
+		</dependency>
 	</dependencies>
 </project>

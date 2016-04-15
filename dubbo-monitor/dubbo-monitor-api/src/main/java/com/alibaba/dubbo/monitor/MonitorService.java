@@ -17,14 +17,25 @@ package com.alibaba.dubbo.monitor;
 
 import java.util.List;
 
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
+import com.alibaba.dubbo.monitor.support.ContentType;
 
 /**
  * MonitorService. (SPI, Prototype, ThreadSafe)
  * 
  * @author william.liangf
  */
+@Path("monitor")
+@Consumes({MediaType.APPLICATION_JSON, MediaType.TEXT_XML})
+@Produces({ContentType.APPLICATION_JSON_UTF_8, ContentType.TEXT_XML_UTF_8})
 public interface MonitorService {
     
     String APPLICATION = "application";
@@ -72,6 +83,8 @@ public interface MonitorService {
      * 
      * @param statistics
      */
+    @POST
+    @Path("collect")
     void collect(URL statistics);
 
     /**
@@ -85,6 +98,8 @@ public interface MonitorService {
      * @param query
      * @return statistics
      */
+    @POST
+    @Path("lookup")
     List<URL> lookup(URL query);
 
 }
