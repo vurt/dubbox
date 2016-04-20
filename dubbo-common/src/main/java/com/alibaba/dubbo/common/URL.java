@@ -17,6 +17,7 @@ package com.alibaba.dubbo.common;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
@@ -34,6 +35,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.alibaba.dubbo.common.utils.CollectionUtils;
 import com.alibaba.dubbo.common.utils.NetUtils;
 import com.alibaba.dubbo.common.utils.StringUtils;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.DefaultJSONParser;
+import com.alibaba.fastjson.parser.ParserConfig;
+import com.alibaba.fastjson.parser.deserializer.JavaBeanDeserializer;
+import com.alibaba.fastjson.serializer.JavaBeanSerializer;
+import com.alibaba.fastjson.serializer.SerializeConfig;
 
 /**
  * URL - Uniform Resource Locator (Immutable, ThreadSafe)
@@ -74,6 +82,31 @@ public final class URL implements Serializable {
     
     private static final long serialVersionUID = -1985165475234910535L;
     
+    static {
+        SerializeConfig globalInstance = SerializeConfig.getGlobalInstance();
+        JavaBeanSerializer value = new JavaBeanSerializer(URL.class, "host", "host", "ip", "ip", "parameters", "parameters", "password", "password", "path", "path", "port", "port", "protocol", "protocol", "username", "username");
+        globalInstance.put(URL.class, value);
+        
+        ParserConfig parserConfig = ParserConfig.getGlobalInstance();
+        parserConfig.putDeserializer(URL.class, new JavaBeanDeserializer(parserConfig, URL.class) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            public Object deserialze(DefaultJSONParser parser, Type type, Object fieldName, Object object) {
+                super.deserialze(parser, type, fieldName, object);
+                HashMap<String, Object> map = JSON.parseObject(parser.getInput(), HashMap.class);
+                Map parameters = (JSONObject)map.get("parameters");
+                String protocol = map.get("protocol") == null ? null : map.get("protocol") + "";
+                String username = map.get("username") == null ? null : map.get("username") + "";
+                String password = map.get("password") == null ? null : map.get("password") + "";
+                String host = map.get("host") == null ? null : map.get("host") + "";
+                Integer port = map.get("port") == null ? null : Integer.valueOf(map.get("port") + "");
+                String path = map.get("path") == null ? null : map.get("path") + "";
+                URL url = new URL(protocol, username, password, host, port, path, parameters);
+                return url;
+            }
+            
+        });
+    }
+    
     public static String decode(String value) {
         if (value == null || value.length() == 0) { return ""; }
         try {
@@ -95,7 +128,11 @@ public final class URL implements Serializable {
     }
     
     public static void main(String[] args) {
-        System.out.println(encode("/dubbo"));
+        URL url = new URL("ftp", "172.16.25.194", 999).addParameter("test", "1");
+        String aString = (JSON.toJSONString(url));
+        System.out.println(aString);
+        URL rurl = JSON.parseObject(aString, URL.class);
+        System.out.println(JSON.toJSONString(rurl));
     }
     
     /**
@@ -811,7 +848,7 @@ public final class URL implements Serializable {
     }
     
     public String getParameter(String key) {
-        if (parameters!=null) {
+        if (parameters != null) {
             String value = parameters.get(key);
             if (value == null || value.length() == 0) {
                 value = parameters.get(Constants.DEFAULT_KEY_PREFIX + key);
