@@ -35,9 +35,9 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
-		  <groupId>org.jboss.resteasy</groupId>
-		  <artifactId>jaxrs-api</artifactId>
-		  <version>3.0.7.Final</version>
+			<groupId>com.alibaba</groupId>
+			<artifactId>dubbo-rpc-rest</artifactId>
+			<version>${project.parent.version}</version>
 		</dependency>
 	</dependencies>
 </project>

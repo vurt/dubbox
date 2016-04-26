@@ -86,10 +86,5 @@
             <artifactId>jackson-databind</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-        	<groupId>com.chinacreator.c2.desb</groupId>
-        	<artifactId>resteasy-fastjson-provider</artifactId>
-        	<version>3.0.7.Final</version>
-        </dependency>
     </dependencies>
 </project>
