@@ -44,6 +44,9 @@ public class Statistics implements Serializable {
     private String client;
     
     private String server;
+    
+ // tbw 服务域
+ 	private String scope;
 
     public Statistics(URL url) {
         this.url = url;
@@ -54,7 +57,16 @@ public class Statistics implements Serializable {
         this.version = url.getParameter(MonitorService.VERSION);
         this.client = url.getParameter(MonitorService.CONSUMER, url.getAddress());
         this.server = url.getParameter(MonitorService.PROVIDER, url.getAddress());
+        this.scope = url.getParameter("scope","");//添加服务域支持
     }
+    
+    public String getScope() {
+ 		return scope;
+ 	}
+
+ 	public void setScope(String scope) {
+ 		this.scope = scope;
+ 	}
 
     public URL getUrl() {
         return url;
@@ -129,6 +141,7 @@ public class Statistics implements Serializable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((scope == null) ? 0 : scope.hashCode());
         result = prime * result + ((application == null) ? 0 : application.hashCode());
         result = prime * result + ((client == null) ? 0 : client.hashCode());
         result = prime * result + ((group == null) ? 0 : group.hashCode());
@@ -181,6 +194,9 @@ public class Statistics implements Serializable {
         if (version == null) {
             if (other.version != null)
                 return false;
+        } if (scope == null) {
+			if (other.scope != null)
+				return false;
         } else if (!version.equals(other.version))
             return false;
         return true;
